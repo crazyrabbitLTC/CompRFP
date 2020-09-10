@@ -6,6 +6,10 @@ pragma experimental ABIEncoderV2;
 import './ICompound.sol';
 import "./CrowdProposalFactory";
 
+interface ICAPFactory {
+    function createCrowdProposal(address[] memory targets, uint[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) external;
+}
+
 contract RequestForProposal {
     /// @notice `COMP` token contract address
     address public immutable comp;
@@ -180,6 +184,7 @@ contract RequestForProposal {
         emit RFPStatusChanged(id, RFPStatus.cancelled);
         
     }
+
 /**
 * @notice Award an RFP Submission
 * @notice This will nee beter reentrancy guards
@@ -191,6 +196,8 @@ contract RequestForProposal {
         require(requestsForProposals[rfpId].requestor == msg.sender, "Only the RFP creator can award");
         /// Require the RFP is actually open
         require(requestsForProposals[rfpId].status == RFPStatus.open, "RFP is not open and can not be awarded");
+        /// Require the RFP has not expired
+        require(requestsForProposals[rfpId].expiry < Block.number, "RFP has expired");
         /// Require that the RFP proposal is "submitted"
         require(submissions[rfpId][submissionId].status == RFPSubmissionStatus.submitted, "RFP Proposal is not in Submitted State");
         
@@ -201,9 +208,6 @@ contract RequestForProposal {
         uint256 bounty = requestsForProposals[id].bounty;
         requestsForProposals[rfpId].bounty = 0;
         
-
-
-        // 
         //Send the bounty=, what happens if this fails?
         IComp(comp).transferFrom(address(this), submissions[rfpId][submissionId].creator, bounty);
 
@@ -211,9 +215,34 @@ contract RequestForProposal {
 
     }
 
-    function submitToCAP() external {}
+    /**
+    * @notice Submit an approved submission to the COMP CrowdProposalFactory
+    * @notice Anyone can submit, but it must be an approved and paid out proposal
+    * @notice The submiter must also have enough Comp allowance to succesfullly make the crowdProposal
+    * @param rfpId The ID of the request for Proposal
+    * @param submissionId The ID of the submission to the RFP being awarded
+     */
+    function submitToCAP(uint256 rfpId, uint256 submissionId) external {
+        /// Require the Proposal to have been selected (maybe not nessesary but for now we let it slide)
+        require(submissions[rfpId][submissionId].status == RFPSubmissionStatus.selected, "Proposal was not selected");
 
-    function getRFPStatus() {}
+        //Mark Status as submitted (if anyone would reentrant this?)
+        submissions[rfpId][submissionId].status = RFPSubmissionStatus.proposed;
 
-    function getProposalStatus() {}
+        ICAPFactory(CAPFactory).createCrowdProposal(
+            submissions[rfpId][submissionId].targets,
+            submissions[rfpId][submissionId].values,
+            submissions[rfpId][submissionId].signatures,
+            submissions[rfpId][submissionId].calldatas,
+            submissions[rfpId][submissionId].description,
+        );
+
+        emit SubmissionChanged(rfpId, submissionId,submissions[rfpId][submissionId].status);
+    }
+
+    //Todo
+    //function getRFPStatus(uint256 RFPIs) public {}
+    
+
+    //function getProposalStatus() {}
 }

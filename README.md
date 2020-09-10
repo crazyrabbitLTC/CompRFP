@@ -1,3 +1,16 @@
+Autonomous Proposal Markets
+===========================
+
+This is a fork of the Compound Autonomous Proposals that adds the ability to do a "Request for Proposal" with a bounty as an incentive. 
+
+The goal behind this idea is to create a market where governance experts can sell their talents to Liquidity Providers and other interested parties who might not have the expertise to craft COMP proposals in house. 
+
+With RFP anyone can set a bounty, create a description of what they are looking for, and publish a request. Providers can submit fully crafted executable COMP Governance proposals onchain, and the publisher of the RFP can award a winning proposal with the bounty and have it submitted to the Compound Autonomous Proposals contract where it can garnish vote support from the community. 
+
+This is untested and early proof of concept. 
+
+Created by Dennison Bertram
+
 Autonomous Proposals
 ====================
 Compound Autonomous Proposals allow anyone with enough COMP stake (currently 100; subject to change) to create an autonomous proposal and gather public support by receiving delegations to the autonomous proposal contract.

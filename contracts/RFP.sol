@@ -4,22 +4,21 @@ pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
 import './ICompound.sol';
-import "./CrowdProposalFactory";
 
 interface ICAPFactory {
     function createCrowdProposal(address[] memory targets, uint[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) external;
 }
 
 contract RequestForProposal {
-    /// @notice `COMP` token contract address
+    /// @dev `COMP` token contract address
     address public immutable comp;
-    /// @notice Crowd Proposal factory contract address
+    /// @dev Crowd Proposal factory contract address
     address public immutable CAPFactory;
 
     // Should we let governor alpha reclaim lost funds? 
 
-    /// @notice Minimum duration for a RFP
-    uint256 public minDuration;
+    /// @dev Minimum duration for a RFP
+        uint256 public minDuration;
 
     /// @notice Status of a Proposal
     enum RFPStatus {
@@ -36,14 +35,14 @@ contract RequestForProposal {
         submitted,
         selected,
         proposed,
-        rejected,
+        rejected
     }
 
-    /// @notice The number of RFP's in the system
-    /// @notice This should be replaces with OpenZeppelin Counters
+    /// @dev The number of RFP's in the system
+    /// @dev This should be replaces with OpenZeppelin Counters
     uint256 public RFPCount;
 
-    /// @notice Describes the components of a Request for Proposal
+    /// @dev Describes the components of a Request for Proposal
     struct RFP {
         address requestor;
         uint256 id;
@@ -55,23 +54,23 @@ contract RequestForProposal {
         bool awarded;
     }
 
-    /// @notice Mapping of Request for proposals by integer
+    /// @dev Mapping of Request for proposals by integer
     mapping(uint => RFP) requestsForProposals;
 
-    /// @notice Descibes the contents of a RFP submission
+    /// @dev Descibes the contents of a RFP submission
     struct Submission {
         uint256 RFPId;
         address creator;
         string submissionDescription;
         RFPSubmissionStatus status;
-        address[] targets,
-        uint256[] values,
-        string[] signatures,
-        bytes[] calldatas,
-        string description
+        address[] targets;
+        uint256[] values;
+        string[] signatures;
+        bytes[] calldatas;
+        string description;
     }
 
-    /// @notice Library of all RFP submissions mapping RFPId to submission ids
+    /// @dev Library of all RFP submissions mapping RFPId to submission ids
     mapping(uint => mapping(uint => Submission)) submissions;
 
     /// @notice A count of all submissions
@@ -89,7 +88,7 @@ contract RequestForProposal {
     /// @notice An event emitted on the change of status of a Proposal
     event SubmissionChanged(uint RFP, uint SubmissionId, RFPSubmissionStatus status);
 
-    constructor(address capFactory_, address comp_ uint256 minDuration_) public {
+    constructor(address capFactory_, address comp_, uint256 minDuration_) public {
         CAPFactory = capFactory_;
         comp = comp_;
         minDuration = minDuration_;
@@ -119,7 +118,7 @@ contract RequestForProposal {
         rfp.expiry = expiry;
         rfp.requestDescription = requestDescription;
         rfp.bounty = bounty;
-        rfp.RFPStatus = RFPStatus.open;
+        rfp.status = RFPStatus.open;
         rfp.awarded = false;
 
         requestsForProposals[currentCount] = rfp;
@@ -139,7 +138,7 @@ contract RequestForProposal {
     ) external {
 
         //Require that the RFP is open
-        require(requestForProposals[RFPId] == RFPStatus.open, "RFP is not open for submissions");
+        require(requestsForProposals[RFPId].status == RFPStatus.open, "RFP is not open for submissions");
 
         Submission memory submission;
 
@@ -197,7 +196,7 @@ contract RequestForProposal {
         /// Require the RFP is actually open
         require(requestsForProposals[rfpId].status == RFPStatus.open, "RFP is not open and can not be awarded");
         /// Require the RFP has not expired
-        require(requestsForProposals[rfpId].expiry < Block.number, "RFP has expired");
+        require(requestsForProposals[rfpId].expiry < block.number, "RFP has expired");
         /// Require that the RFP proposal is "submitted"
         require(submissions[rfpId][submissionId].status == RFPSubmissionStatus.submitted, "RFP Proposal is not in Submitted State");
         
@@ -205,7 +204,7 @@ contract RequestForProposal {
         submissions[rfpId][submissionId].status = RFPSubmissionStatus.selected;
 
         //Need better re-entrancy protection here. 
-        uint256 bounty = requestsForProposals[id].bounty;
+        uint256 bounty = requestsForProposals[rfpId].bounty;
         requestsForProposals[rfpId].bounty = 0;
         
         //Send the bounty=, what happens if this fails?
@@ -234,7 +233,7 @@ contract RequestForProposal {
             submissions[rfpId][submissionId].values,
             submissions[rfpId][submissionId].signatures,
             submissions[rfpId][submissionId].calldatas,
-            submissions[rfpId][submissionId].description,
+            submissions[rfpId][submissionId].description
         );
 
         emit SubmissionChanged(rfpId, submissionId,submissions[rfpId][submissionId].status);
@@ -242,7 +241,6 @@ contract RequestForProposal {
 
     //Todo
     //function getRFPStatus(uint256 RFPIs) public {}
-    
-
     //function getProposalStatus() {}
+    //function letCompGovernorReclaimLostFunds
 }
